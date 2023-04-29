@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+typedef struct {
+    const char* input;
+    int pos;
+} ParserState;
+
+int parseExpression(ParserState* state);
+int match(ParserState* state, char c) {
+    if (state->input[state->pos] == c) {
+        state->pos++;
+        return 1;
+    }
+    return 0;
+}
+
+int parseNumber(ParserState* state) {
+    int result = 0;
+    while (isdigit(state->input[state->pos])) {
+        result = result * 10 + (state->input[state->pos] - '0');
+        state->pos++;
+    }
+    return result;
+}
+
+int parseFactor(ParserState* state) {
+    if (match(state, '(')) {
+        int result = parseExpression(state);
+        if (!match(state, ')')) {
+            printf("Error: expected ')' at position %d\n", state->pos);
+            exit(1);
+        }
+        return result;
+    } else {
+        return parseNumber(state);
+    }
+}
+
+int parseTerm(ParserState* state) {
+    int result = parseFactor(state);
+    while (1) {
+        if (match(state, '*')) {
+            result *= parseFactor(state);
+        } else if (match(state, '/')) {
+            int divisor = parseFactor(state);
+            if (divisor == 0) {
+                printf("Error: division by zero at position %d\n", state->pos);
+                exit(1);
+            }
+            result /= divisor;
+        } else {
+            break;
+        }
+    }
+    return result;
+}
+
+int parseExpression(ParserState* state) {
+    int result = parseTerm(state);
+    while (1) {
+        if (match(state, '+')) {
+            result += parseTerm(state);
+        } else if (match(state, '-')) {
+            result -= parseTerm(state);
+        } else {
+            break;
+        }
+    }
+    return result;
+}
+
+int main() {
+	char s[100];
+	printf("Enter a arithemetic operation");
+	scanf("%s",s);
+    ParserState state = {s, 0};
+    int result = parseExpression(&state);
+    printf("Result: %d\n", result);
+    return 0;
+}
